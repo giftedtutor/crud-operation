@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-
+import axios from 'axios'
 const CRUD = () => {
     const [formData, setFormData] = useState({
         userId: "",
@@ -8,7 +8,10 @@ const CRUD = () => {
         body: "",
     });
 
+    const [editID, setEditID] = useState()
+
     const [data, setData] = useState([]);
+    const [refresh, setRefresh] = useState(0)
 
     const { userId, id, title, body } = formData;
 
@@ -19,25 +22,55 @@ const CRUD = () => {
     const handleSubmit = (e) => {
         e.preventDefault();
         if (userId && id && title && body) {
-            setData([...data, formData]);
-            setFormData({ userId: "", id: "", title: "", body: "" });
+            axios.post('https://jsonplaceholder.typicode.com/posts', formData)
+                .then(res => {
+                    setData([...data, res.data]);
+                    setFormData({ userId: "", id: "", title: "", body: "" });
+
+                })
+                .catch(err => console.log(err))
+
         }
     };
 
-    const handleDelete = (index) => {
-        const newData = data.filter((item, i) => i !== index);
-        setData(newData);
+    const handleUpdate = () => {
+        if (userId && id && title && body) {
+            axios.put(`https://jsonplaceholder.typicode.com/posts/${editID}`, formData)
+                .then(res => {
+                    setFormData({ userId: "", id: "", title: "", body: "" });
+                    setRefresh(refresh + 1)
+                })
+                .catch(err => console.log(err))
+
+        }
     };
 
-    const handleEdit = (index) => {
-        const itemToEdit = data[index];
-        setFormData(itemToEdit);
-        handleDelete(index);
+    const handleDelete = (deleteID) => {
+        axios.delete(`https://jsonplaceholder.typicode.com/posts/${deleteID}`)
+        .then(res => {
+           console.log('DELETD RECORD::::', res)
+
+        })
+        .catch(err => console.log(err))
+    };
+
+    const handleEdit = (editIDNotState) => {
+        axios.get(`https://jsonplaceholder.typicode.com/posts/${editIDNotState}`)
+            .then(res => {
+                setFormData(res.data)
+
+            })
+            .catch(err => console.log(err))
     };
 
     useEffect(() => {
-        console.log(data);
-    }, [data]);
+        axios.get('https://jsonplaceholder.typicode.com/posts')
+            .then(res => {
+                setData(res.data)
+            })
+            .catch(err => console.log(err))
+        // console.log(data);
+    }, [refresh]);
 
     return (
         <div className="container">
@@ -100,6 +133,11 @@ const CRUD = () => {
                         <button type="submit" className="btn btn-primary">
                             Submit
                         </button>
+                        <button type="submit" className="btn btn-primary" onClick={() => {
+                            handleUpdate()
+                        }}>
+                            Update
+                        </button>
                     </form>
 
                     <hr />
@@ -122,10 +160,13 @@ const CRUD = () => {
                                     <td>{item.title}</td>
                                     <td>{item.body}</td>
                                     <td>
-                                        <button className="btn btn-warning" onClick={() => handleEdit(index)}>
+                                        <button className="btn btn-warning" onClick={() => {
+                                            handleEdit(item.id)
+                                            setEditID(item.id)
+                                        }}>
                                             Edit
                                         </button>{" "}
-                                        <button className="btn btn-danger" onClick={() => handleDelete(index)}>
+                                        <button className="btn btn-danger" onClick={() => handleDelete(item.id)}>
                                             Delete
                                         </button>
                                     </td>
